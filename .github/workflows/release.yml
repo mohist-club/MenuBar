@@ -26,18 +26,27 @@ jobs:
       - name: Build, package and sign
         run: ./build.sh
 
-      - name: Zip
-        run: ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
+      - name: Package ZIP and DMG
+        run: |
+          ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
+          hdiutil create \
+            -volname "MenuBar Translator" \
+            -srcfolder MenuBarTranslator.app \
+            -ov -format UDZO MenuBarTranslator.dmg
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: MenuBarTranslator.zip
+          files: |
+            MenuBarTranslator.zip
+            MenuBarTranslator.dmg
           body: |
             ⚠️ 这个版本是 ad-hoc 自签名,不是 Apple 官方认证开发者签名。
             首次打开会被系统拦截提示"无法验证开发者"或"已损坏",这是正常现象,不是文件真的坏了。
 
             **解决方法**:双击打开被拦截后,去 **系统设置 → 隐私与安全性**,往下翻能看到一条
             关于 MenuBarTranslator 被阻止打开的提示,点 **仍要打开** 并确认,以后就能正常双击启动了。
+
+            Release 同时提供 **DMG**（打开后拖入“应用程序”）和 **ZIP** 两种安装包。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
