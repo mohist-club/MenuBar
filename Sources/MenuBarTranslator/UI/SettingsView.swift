@@ -25,6 +25,7 @@ struct SettingsView: View {
 
 struct GeneralSettingsView: View {
     @State private var launchAtLogin = false
+    @State private var accessibilityGranted = PermissionManager.shared.isAccessibilityTrusted
 
     var body: some View {
         Form {
@@ -32,17 +33,27 @@ struct GeneralSettingsView: View {
                 .onChange(of: launchAtLogin) { newValue in
                     try? newValue ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
                 }
-            Text("辅助功能权限状态: \(PermissionManager.shared.isAccessibilityTrusted ? "已授权 ✅" : "未授权 ⚠️")")
+            Text("辅助功能权限状态: \(accessibilityGranted ? "已授权 ✅" : "未授权 ⚠️")")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if !PermissionManager.shared.isAccessibilityTrusted {
+            Text("当前运行位置：\(Bundle.main.bundleURL.path)")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .textSelection(.enabled)
+            HStack {
+                Button("重新检测") {
+                    accessibilityGranted = PermissionManager.shared.isAccessibilityTrusted
+                }
+                if !accessibilityGranted {
                 Button("前往系统设置授权") {
                     PermissionManager.shared.openSystemPreferencesAccessibilityPane()
+                }
                 }
             }
         }
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            accessibilityGranted = PermissionManager.shared.isAccessibilityTrusted
         }
     }
 }
