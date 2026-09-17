@@ -264,7 +264,7 @@ struct TranslationSettingsView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// 点"保存设置"时统一落盘:非敏感配置存本地 JSON,两个 API Key 分别存各自的 Keychain 条目
+    /// 点“保存设置”时统一落盘：所有个人配置与 API Key 只保存在当前 Mac 的本地配置中。
     private func persist() {
         settings.save()
         KeychainHelper.saveAPIKey(openaiKey, for: .openai)

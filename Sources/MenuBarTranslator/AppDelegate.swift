@@ -18,7 +18,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 纯菜单栏应用,不需要 Dock 图标(同时也在 Info.plist 里设置 LSUIElement=YES 做双重保险)
         NSApp.setActivationPolicy(.accessory)
 
-        KeychainHelper.migrateLegacyKeyIfNeeded()
         setupStatusItem()
 
         // 始终注册热键。KeyboardShortcuts 不需要在启动时弹授权；取词时会
