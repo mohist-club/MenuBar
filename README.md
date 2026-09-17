@@ -1,4 +1,4 @@
-# MenuBarTranslator
+# Poptro
 
 一个 macOS 菜单栏工具:一个全局快捷键搞定「划词翻译」和「快速启动应用」。
 
@@ -16,14 +16,14 @@
 
 ## 安装
 
-去 [Releases](https://github.com/mohist-club/MenuBar/releases) 页面下载最新的 `MenuBarTranslator.zip`,解压后把 `MenuBarTranslator.app` 拖进「应用程序」文件夹。
+去 [Releases](https://github.com/mohist-club/Poptro/releases) 页面下载最新的 `Poptro.dmg`,打开后把 `Poptro.app` 拖进「应用程序」文件夹。
 
 ### ⚠️ 首次打开被系统拦截怎么办
 
 这个项目目前是**免费开源、个人维护**,没有走 Apple 的付费开发者签名认证($99/年)。所以你**首次**双击打开时,大概率会看到类似「无法打开,因为无法验证开发者」或「已损坏,无法打开」的提示——这是正常现象,**不是文件真的损坏了**,按下面步骤操作一次就好,以后就能正常双击打开:
 
-1. 双击打开 `MenuBarTranslator.app`,会弹出提示说无法打开
-2. 打开 **系统设置 → 隐私与安全性**,往下滚动,能看到一条关于 MenuBarTranslator 被阻止打开的提示
+1. 双击打开 `Poptro.app`,会弹出提示说无法打开
+2. 打开 **系统设置 → 隐私与安全性**,往下滚动,能看到一条关于 Poptro 被阻止打开的提示
 3. 点 **仍要打开**,输入你的 Mac 密码确认
 4. 之后正常双击图标就能打开了,不会再提示
 
@@ -42,15 +42,15 @@
 
 - 使用 OpenAI 或 DeepL 时,你划词/输入的文本会**发送给你自己配置的那家服务商**做翻译,具体隐私政策以对应服务商官网为准
 - 使用 Ollama 时,翻译完全在你本机进行,不会有任何网络请求发出去
-- API Key 统一存储在 macOS 系统钥匙串(Keychain)里,不会以明文形式落盘或上传到任何地方
+- API Key 仅保存在本机，并使用与当前 Mac 绑定的 AES-GCM 密钥加密，不会以明文形式落盘或上传
 
 ## 从源码编译
 
 需要 macOS 13+ 和 Xcode 15+(或 Swift 5.9+ 命令行工具)。
 
 ```bash
-git clone https://github.com/mohist-club/MenuBar.git
-cd MenuBar
+git clone https://github.com/mohist-club/Poptro.git
+cd Poptro
 swift build -c release      # 编译
 ./build.sh                  # 打包成 .app(会自动做 ad-hoc 签名)
 ```

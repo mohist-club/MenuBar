@@ -246,14 +246,25 @@ struct PanelPosition: Codable {
     }
 }
 
-/// 简单的本地 JSON 持久化工具,存放在 ~/Library/Application Support/MenuBarTranslator/
+/// 简单的本地 JSON 持久化工具,存放在 ~/Library/Application Support/Poptro/。
+/// 首次运行会无损迁移旧名称 MenuBarTranslator 下的配置。
 enum LocalStore {
-    private static var directory: URL {
+    private static let directory: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = base.appendingPathComponent("MenuBarTranslator", isDirectory: true)
+        let dir = base.appendingPathComponent("Poptro", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let legacy = base.appendingPathComponent("MenuBarTranslator", isDirectory: true)
+        if let files = try? FileManager.default.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil) {
+            for source in files {
+                let destination = dir.appendingPathComponent(source.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: destination.path) {
+                    try? FileManager.default.copyItem(at: source, to: destination)
+                }
+            }
+        }
         return dir
-    }
+    }()
 
     static func load<T: Decodable>(_ type: T.Type, filename: String, default defaultValue: T) -> T {
         let url = directory.appendingPathComponent(filename)

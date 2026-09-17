@@ -3,7 +3,7 @@ import AppKit
 /// Checks GitHub Releases and opens the matching DMG download. In-place
 /// replacement remains intentionally manual until Developer ID notarization.
 enum AutoUpdater {
-    private static let releasesURL = URL(string: "https://api.github.com/repos/mohist-club/MenuBar/releases/latest")!
+    private static let releasesURL = URL(string: "https://api.github.com/repos/mohist-club/Poptro/releases/latest")!
 
     private struct Release: Decodable {
         struct Asset: Decodable { let name: String; let browser_download_url: URL }
@@ -14,7 +14,7 @@ enum AutoUpdater {
 
     static func checkForUpdates() {
         var request = URLRequest(url: releasesURL)
-        request.setValue("MenuBarTranslator", forHTTPHeaderField: "User-Agent")
+        request.setValue("Poptro", forHTTPHeaderField: "User-Agent")
         URLSession.shared.dataTask(with: request) { data, _, error in
             DispatchQueue.main.async {
                 guard let data, let release = try? JSONDecoder().decode(Release.self, from: data) else {

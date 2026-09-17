@@ -56,7 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let controller = NSHostingController(rootView: SettingsView().frame(width: 560, height: 420))
         let window = NSWindow(contentViewController: controller)
-        window.title = "MenuBar Translator 设置"
+        window.title = "Poptro 设置"
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.setContentSize(NSSize(width: 600, height: 500))
         window.isReleasedWhenClosed = false

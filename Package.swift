@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "MenuBarTranslator",
+    name: "Poptro",
     platforms: [.macOS(.v13)],
     dependencies: [
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.0"),
@@ -10,14 +10,14 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "MenuBarTranslator",
+            name: "Poptro",
             dependencies: ["KeyboardShortcuts", "Sparkle"],
-            path: "Sources/MenuBarTranslator"
+            path: "Sources/Poptro"
         ),
         .testTarget(
-            name: "MenuBarTranslatorTests",
-            dependencies: ["MenuBarTranslator"],
-            path: "Tests/MenuBarTranslatorTests"
+            name: "PoptroTests",
+            dependencies: ["Poptro"],
+            path: "Tests/PoptroTests"
         )
     ]
 )

@@ -1,13 +1,11 @@
-# MenuBar Translator
+# Poptro
 
 类 Raycast 的快捷键启动应用 + 类 Bob 的划词翻译(OpenAI 驱动),菜单栏常驻。
 
 ## 重要说明
 
-本项目由 Claude 在 Linux 沙盒环境中编写,**没有 Xcode / macOS 运行时,因此代码未经过实际编译和真机测试**。
-架构和 API 用法均按 Apple 官方文档与常见实现模式编写,但请在你自己的 Mac 上编译后,
-针对权限授权、AX 取词兼容性等做实际调试。大概率会遇到一些需要现场修的小问题(尤其是
-Accessibility API 在不同 App 里的兼容性,以及 SSE 流式解析的边界情况)。
+项目已在 macOS 真机完成编译、安装与基础功能验证。涉及 Accessibility API 的划词能力
+仍可能因目标应用的控件实现不同而存在兼容差异。
 
 ## 环境要求
 
@@ -17,7 +15,7 @@ Accessibility API 在不同 App 里的兼容性,以及 SSE 流式解析的边界
 ## 编译运行
 
 ```bash
-cd MenuBarTranslator
+cd Poptro
 swift build            # 调试模式,直接跑
 swift run               # 编译并运行(会在菜单栏出现图标)
 ```
@@ -26,22 +24,22 @@ swift run               # 编译并运行(会在菜单栏出现图标)
 
 ```bash
 ./build.sh
-codesign --force --deep --sign - MenuBarTranslator.app   # 本地自签,避免反复丢权限
-open MenuBarTranslator.app
+codesign --force --deep --sign - Poptro.app   # 本地自签
+open Poptro.app
 ```
 
 ## 首次运行
 
 1. 启动后会弹出"需要辅助功能权限"提示,点击"前往系统设置",
    在 `系统设置 -> 隐私与安全性 -> 辅助功能` 里勾选本应用。
-2. 点击菜单栏图标 -> 设置,在"翻译设置"里填入 OpenAI API Key(存 macOS Keychain,不明文存储)。
+2. 点击菜单栏图标 -> 设置,在“翻译设置”里填写 API Key；密钥仅在本机加密保存。
 3. 在"应用快捷启动"里添加要绑定的应用并录制快捷键。
 4. 划词后按默认快捷键 `Option + D`(可在设置里改)触发翻译弹窗。
 
 ## 项目结构
 
 ```
-Sources/MenuBarTranslator/
+Sources/Poptro/
 ├── App.swift                      SwiftUI App 入口
 ├── AppDelegate.swift              状态栏图标、菜单、启动流程
 ├── Models/Models.swift            数据模型 + 本地 JSON 持久化

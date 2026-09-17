@@ -9,6 +9,8 @@ import IOKit
 /// Values are AES-GCM encrypted with a key derived from this Mac's hardware
 /// UUID, so the local preferences file does not contain a readable API key.
 enum KeychainHelper {
+    // Keep the legacy preference keys and encryption salt so existing API keys
+    // remain readable after the public app name changes to Poptro 1.0.
     private static func localKey(for provider: TranslationProvider) -> String {
         switch provider {
         case .openai: return "com.menubartranslator.local.openai-api-key"

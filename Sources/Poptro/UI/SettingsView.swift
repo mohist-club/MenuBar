@@ -298,7 +298,7 @@ struct AboutView: View {
         VStack(spacing: 8) {
             Image(systemName: "character.bubble")
                 .font(.system(size: 40))
-            Text("MenuBar Translator").font(.headline)
+            Text("Poptro").font(.headline)
             Text("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")")
                 .font(.caption)
                 .foregroundStyle(.secondary)

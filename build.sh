@@ -3,7 +3,7 @@
 # 用法: ./build.sh
 set -e
 
-APP_NAME="MenuBarTranslator"
+APP_NAME="Poptro"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 DIST_DIR="dist"
@@ -57,7 +57,7 @@ DMG_STAGE=$(mktemp -d)
 ditto "$APP_BUNDLE" "$DMG_STAGE/$APP_BUNDLE"
 ln -s /Applications "$DMG_STAGE/Applications"
 rm -f "$DMG_PATH"
-hdiutil create -volname "MenuBar Translator" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
+hdiutil create -volname "Poptro" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
 rm -rf "$DMG_STAGE"
 
 echo "==> 完成: $APP_BUNDLE"

@@ -3,19 +3,19 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>MenuBarTranslator</string>
+    <string>Poptro</string>
     <key>CFBundleDisplayName</key>
-    <string>MenuBar Translator</string>
+    <string>Poptro</string>
     <key>CFBundleIdentifier</key>
     <string>com.menubartranslator.app</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
-	<string>0.1.7</string>
+	<string>1.0.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
-    <string>MenuBarTranslator</string>
+    <string>Poptro</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSUIElement</key>
@@ -25,7 +25,7 @@
     <key>NSAppleEventsUsageDescription</key>
     <string>需要控制其他应用以实现快捷启动功能</string>
     <key>NSAccessibilityUsageDescription</key>
-    <string>MenuBar Translator 需要辅助功能权限以读取当前划选文字并响应你设置的全局快捷键。</string>
+    <string>Poptro 需要辅助功能权限以读取当前划选文字并响应你设置的全局快捷键。</string>
     <!-- Sparkle 自动更新配置(占位符,发布前需要替换成你自己的):
          SUFeedURL 指向你托管的 appcast.xml;
          SUPublicEDKey 是 generate_keys 生成的公钥,具体见 AutoUpdater.swift 里的说明 -->

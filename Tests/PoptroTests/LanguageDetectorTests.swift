@@ -1,5 +1,5 @@
 import XCTest
-@testable import MenuBarTranslator
+@testable import Poptro
 
 final class LanguageDetectorTests: XCTestCase {
 

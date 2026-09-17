@@ -55,7 +55,7 @@ jobs:
       - name: Sign with Developer ID
         run: |
           codesign --force --deep --options runtime \
-            --sign "Developer ID Application" MenuBarTranslator.app
+            --sign "Developer ID Application" Poptro.app
 
       - name: Notarize
         env:
@@ -63,20 +63,20 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
-          xcrun notarytool submit MenuBarTranslator.zip \
+          ditto -c -k --keepParent Poptro.app Poptro.zip
+          xcrun notarytool submit Poptro.zip \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
             --wait
-          xcrun stapler staple MenuBarTranslator.app
-          rm MenuBarTranslator.zip
-          ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
+          xcrun stapler staple Poptro.app
+          rm Poptro.zip
+          ditto -c -k --keepParent Poptro.app Poptro.zip
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag }}
-          files: MenuBarTranslator.zip
+          files: Poptro.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
