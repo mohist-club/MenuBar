@@ -70,4 +70,4 @@ echo "如果办了 Apple Developer Program 账号,想要不需要用户手动授
 echo "参考 .github/workflows/release-notarized.yml 里的公证流程。"
 echo ""
 echo "打开方式: open $APP_BUNDLE"
-echo "DMG 安装包: $DMG_PATH（打开后将 App 拖入 Applications）"
+echo "DMG 安装包: ${DMG_PATH}（打开后将 App 拖入 Applications）"

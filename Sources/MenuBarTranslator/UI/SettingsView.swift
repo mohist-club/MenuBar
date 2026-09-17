@@ -24,15 +24,35 @@ struct SettingsView: View {
 // MARK: - 通用
 
 struct GeneralSettingsView: View {
-    @State private var launchAtLogin = false
+    @State private var launchAtLogin: Bool
     @State private var accessibilityGranted = PermissionManager.shared.isAccessibilityTrusted
+    @State private var launchAtLoginError: String?
+
+    init() {
+        _launchAtLogin = State(initialValue: SMAppService.mainApp.status == .enabled)
+    }
 
     var body: some View {
         Form {
             Toggle("开机自动启动", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { newValue in
-                    try? newValue ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
+                    do {
+                        if newValue {
+                            try SMAppService.mainApp.register()
+                        } else {
+                            try SMAppService.mainApp.unregister()
+                        }
+                        launchAtLoginError = nil
+                    } catch {
+                        launchAtLoginError = error.localizedDescription
+                        launchAtLogin = SMAppService.mainApp.status == .enabled
+                    }
                 }
+            if let launchAtLoginError {
+                Text("开机启动设置失败：\(launchAtLoginError)")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
             Text("辅助功能权限状态: \(accessibilityGranted ? "已授权 ✅" : "未授权 ⚠️")")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -52,7 +72,6 @@ struct GeneralSettingsView: View {
             }
         }
         .onAppear {
-            launchAtLogin = SMAppService.mainApp.status == .enabled
             accessibilityGranted = PermissionManager.shared.isAccessibilityTrusted
         }
     }
@@ -73,7 +92,7 @@ struct AppLaunchSettingsView: View {
                             .resizable().frame(width: 24, height: 24)
                         Text(binding.appName)
                         Spacer()
-                        KeyboardShortcuts.Recorder(for: KeyboardShortcuts.Name(binding.hotkeyName))
+                        ShortcutRecorderView(name: KeyboardShortcuts.Name(binding.hotkeyName))
                         Button(role: .destructive) {
                             launcher.removeBinding(binding)
                         } label: {
@@ -157,7 +176,7 @@ struct TranslationSettingsView: View {
             HStack {
                 Text("翻译(有划词自动翻译 / 无划词手动输入)")
                 Spacer()
-                KeyboardShortcuts.Recorder(for: .translateSelection)
+                ShortcutRecorderView(name: .translateSelection)
             }
 
             Picker("翻译窗口外观", selection: $settings.panelAppearanceMode) {
@@ -280,7 +299,9 @@ struct AboutView: View {
             Image(systemName: "character.bubble")
                 .font(.system(size: 40))
             Text("MenuBar Translator").font(.headline)
-            Text("v0.1.0").font(.caption).foregroundStyle(.secondary)
+            Text("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text("全局快捷键启动应用 + AI 划词翻译")
                 .font(.caption)
                 .foregroundStyle(.secondary)
