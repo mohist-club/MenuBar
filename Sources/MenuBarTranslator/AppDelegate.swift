@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let permissionManager = PermissionManager.shared
     let appLauncher = AppLauncher.shared
     let hotkeyManager = HotkeyManager.shared
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard InstallationManager.requireCanonicalInstallation() else {
@@ -48,16 +49,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AutoUpdater.checkForUpdates()
     }
 
-    // 用系统原生的 Settings 场景机制(App.swift 里声明的 `Settings { SettingsView() }`)来开窗口,
-    // 而不是自己再手搓一个 NSWindow——之前手动建窗口和 SwiftUI 的 Settings scene 各管一份,
-    // 两边打架导致关掉窗口后又莫名重新弹出来。用系统这套只有一个入口,不会再冲突。
     @objc private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 14.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        if let settingsWindow {
+            settingsWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
         }
+        let controller = NSHostingController(rootView: SettingsView().frame(width: 560, height: 420))
+        let window = NSWindow(contentViewController: controller)
+        window.title = "MenuBar Translator 设置"
+        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.setContentSize(NSSize(width: 600, height: 500))
+        window.isReleasedWhenClosed = false
+        self.settingsWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func quit() {
