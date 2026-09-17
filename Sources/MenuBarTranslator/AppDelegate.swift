@@ -10,6 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let hotkeyManager = HotkeyManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard InstallationManager.requireCanonicalInstallation() else {
+            NSApp.terminate(nil)
+            return
+        }
         // 纯菜单栏应用,不需要 Dock 图标(同时也在 Info.plist 里设置 LSUIElement=YES 做双重保险)
         NSApp.setActivationPolicy(.accessory)
 
