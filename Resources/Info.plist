@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>MenuBarTranslator</string>
+    <key>CFBundleDisplayName</key>
+    <string>MenuBar Translator</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.menubartranslator.app</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>MenuBarTranslator</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>需要控制其他应用以实现快捷启动功能</string>
+    <!-- Sparkle 自动更新配置(占位符,发布前需要替换成你自己的):
+         SUFeedURL 指向你托管的 appcast.xml;
+         SUPublicEDKey 是 generate_keys 生成的公钥,具体见 AutoUpdater.swift 里的说明 -->
+    <key>SUFeedURL</key>
+    <string>https://example.com/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>REPLACE_WITH_YOUR_SPARKLE_PUBLIC_KEY</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>

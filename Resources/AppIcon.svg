@@ -1,0 +1,57 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B6EF5"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="bubbleShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圆角方块(macOS 风格 squircle 近似) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="228" ry="228" fill="url(#bg)"/>
+
+  <!-- 顶部高光,增加质感 -->
+  <rect x="0" y="0" width="1024" height="512" rx="228" ry="228" fill="#FFFFFF" opacity="0.06"/>
+
+  <!-- 对话气泡主体(代表翻译面板) -->
+  <g>
+    <path d="M 190 260
+             Q 190 210 240 210
+             L 700 210
+             Q 750 210 750 260
+             L 750 560
+             Q 750 610 700 610
+             L 330 610
+             L 230 700
+             L 250 610
+             L 240 610
+             Q 190 610 190 560
+             Z"
+          fill="#FFFFFF"/>
+    <path d="M 190 260
+             Q 190 210 240 210
+             L 700 210
+             Q 750 210 750 260
+             L 750 560
+             Q 750 610 700 610
+             L 330 610
+             L 230 700
+             L 250 610
+             L 240 610
+             Q 190 610 190 560
+             Z"
+          fill="url(#bubbleShadow)"/>
+  </g>
+
+  <!-- 气泡内的抽象文字线条(代表"翻译前/翻译后"两行文本) -->
+  <rect x="260" y="320" width="360" height="46" rx="23" fill="#8B5CF6" opacity="0.85"/>
+  <rect x="260" y="410" width="260" height="46" rx="23" fill="#5B6EF5" opacity="0.55"/>
+
+  <!-- 右下角快捷键徽标(代表全局快捷键启动) -->
+  <circle cx="770" cy="740" r="150" fill="#FFC65C"/>
+  <path d="M 800 640 L 700 770 L 760 770 L 740 850 L 850 700 L 785 700 Z"
+        fill="#FFFFFF"/>
+</svg>

@@ -1,0 +1,74 @@
+name: Release
+
+# 推送一个形如 v1.0.0 的 tag 就会触发。
+#
+# 使用前需要在仓库 Settings -> Secrets and variables -> Actions 里配置这几个 secret
+# (都是你自己 Apple Developer 账号相关的信息,我这边生成不了,需要你自己申请/导出):
+#   APPLE_DEVELOPER_ID_CERT_P12_BASE64   Developer ID Application 证书导出的 .p12 文件, base64 编码后的内容
+#   APPLE_DEVELOPER_ID_CERT_PASSWORD     导出 .p12 时设置的密码
+#   APPLE_ID                             你的 Apple ID 邮箱
+#   APPLE_APP_SPECIFIC_PASSWORD          在 appleid.apple.com 生成的"应用专用密码"(不是你的登录密码)
+#   APPLE_TEAM_ID                        Apple Developer 账号的 Team ID(在 developer.apple.com/account 里能看到)
+#
+# 具体怎么拿到这几个值,可以搜"Xcode Developer ID notarization GitHub Actions",
+# 或者告诉我,我可以写一份更详细的分步说明。
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Import signing certificate
+        env:
+          CERT_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          echo "$CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN_PATH" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Build and package
+        run: ./build.sh
+
+      - name: Sign with Developer ID
+        run: |
+          codesign --force --deep --options runtime \
+            --sign "Developer ID Application" MenuBarTranslator.app
+
+      - name: Notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
+          xcrun notarytool submit MenuBarTranslator.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple MenuBarTranslator.app
+          rm MenuBarTranslator.zip
+          ditto -c -k --keepParent MenuBarTranslator.app MenuBarTranslator.zip
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MenuBarTranslator.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
