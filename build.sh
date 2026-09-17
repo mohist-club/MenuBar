@@ -6,6 +6,8 @@ set -e
 APP_NAME="MenuBarTranslator"
 BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
+DIST_DIR="dist"
+DMG_PATH="${DIST_DIR}/${APP_NAME}.dmg"
 
 echo "==> swift build (release)"
 swift build -c release
@@ -49,6 +51,15 @@ fi
 echo "==> 本地 ad-hoc 签名(避免每次重新编译后系统又要求重新授权辅助功能权限)"
 codesign --force --deep --sign - "$APP_BUNDLE"
 
+echo "==> 生成拖拽安装 DMG"
+mkdir -p "$DIST_DIR"
+DMG_STAGE=$(mktemp -d)
+ditto "$APP_BUNDLE" "$DMG_STAGE/$APP_BUNDLE"
+ln -s /Applications "$DMG_STAGE/Applications"
+rm -f "$DMG_PATH"
+hdiutil create -volname "MenuBar Translator" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
+rm -rf "$DMG_STAGE"
+
 echo "==> 完成: $APP_BUNDLE"
 echo ""
 echo "这是 ad-hoc 自签名,不是 Apple 官方认证开发者签名。"
@@ -59,3 +70,4 @@ echo "如果办了 Apple Developer Program 账号,想要不需要用户手动授
 echo "参考 .github/workflows/release-notarized.yml 里的公证流程。"
 echo ""
 echo "打开方式: open $APP_BUNDLE"
+echo "DMG 安装包: $DMG_PATH（打开后将 App 拖入 Applications）"

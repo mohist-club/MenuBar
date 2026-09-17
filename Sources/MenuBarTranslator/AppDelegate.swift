@@ -16,13 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         KeychainHelper.migrateLegacyKeyIfNeeded()
         setupStatusItem()
 
-        // 启动时检查辅助功能权限,未授权则引导用户开启
-        permissionManager.ensureAccessibilityPermission { granted in
-            if granted {
-                self.hotkeyManager.registerAllHotkeys()
-                self.appLauncher.registerAllLaunchHotkeys()
-            }
-        }
+        // 始终注册热键。KeyboardShortcuts 不需要在启动时弹授权；取词时会
+        // 静默尝试 AX 并自动走剪贴板兜底。仅用户在设置中主动操作时才请求权限。
+        hotkeyManager.registerAllHotkeys()
+        appLauncher.registerAllLaunchHotkeys()
+        permissionManager.checkAccessibilityPermission { _ in }
     }
 
     private func setupStatusItem() {

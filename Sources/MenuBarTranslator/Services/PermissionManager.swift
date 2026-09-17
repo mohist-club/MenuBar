@@ -10,8 +10,8 @@ final class PermissionManager {
         AXIsProcessTrusted()
     }
 
-    /// 启动时调用:若未授权,弹出系统的"是否允许"对话框(带 Prompt),
-    /// 随后展示我们自己的引导页,提示用户去系统设置里勾选。
+    /// 显式请求时才显示系统权限弹窗。绝不能在启动、热键或翻译流程中
+    /// 反复调用，否则 ad-hoc 签名更新后会造成连续授权提示。
     func ensureAccessibilityPermission(completion: @escaping (Bool) -> Void) {
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         let trusted = AXIsProcessTrustedWithOptions(options)
@@ -24,6 +24,11 @@ final class PermissionManager {
         // 未授权:展示引导弹窗,并轮询等待用户在系统设置里授权
         showGuidanceAlert()
         pollForPermission(completion: completion)
+    }
+
+    /// 启动时使用的静默检查：只读取系统当前状态，不显示提示或跳转设置。
+    func checkAccessibilityPermission(completion: @escaping (Bool) -> Void) {
+        completion(AXIsProcessTrusted())
     }
 
     private func showGuidanceAlert() {
