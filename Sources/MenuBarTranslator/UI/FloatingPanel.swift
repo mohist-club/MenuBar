@@ -33,15 +33,14 @@ private struct WindowDragHandle: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
-/// 卡片背景:macOS 26+ 用原生液态玻璃,旧系统回退成之前的纯色卡片背景
+/// 卡片背景。之前尝试过 macOS 26+ 液态玻璃(glassEffect),但这个 API 需要 Xcode 自带
+/// macOS 26 SDK 才能通过编译,CI 机器和大部分贡献者的 Xcode 版本还跟不上,编译直接报错
+/// "cannot infer contextual base in reference to member 'regular'"。#available 只管运行时
+/// 判断,编译期照样要求 SDK 里存在这个符号,所以没法只用运行时判断绕开,先退回稳定方案。
 private struct CardBackground: ViewModifier {
     var cornerRadius: CGFloat = 10
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
-        } else {
-            content.background(RoundedRectangle(cornerRadius: cornerRadius).fill(Color(nsColor: .controlBackgroundColor)))
-        }
+        content.background(RoundedRectangle(cornerRadius: cornerRadius).fill(Color(nsColor: .controlBackgroundColor)))
     }
 }
 
@@ -63,21 +62,12 @@ struct TranslationPanelView: View {
 
 
     var body: some View {
-        Group {
-            if #available(macOS 26.0, *) {
-                GlassEffectContainer {
-                    panelContent
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
-                }
-            } else {
-                panelContent
-                    .background(VisualEffectBackground())
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-        )
+        panelContent
+            .background(VisualEffectBackground())
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
     }
 
     private var panelContent: some View {

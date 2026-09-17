@@ -46,10 +46,16 @@ else
     echo "      如果确实找不到,把 'find .build -name Sparkle.framework' 的结果发我,我根据实际路径调整脚本。"
 fi
 
+echo "==> 本地 ad-hoc 签名(避免每次重新编译后系统又要求重新授权辅助功能权限)"
+codesign --force --deep --sign - "$APP_BUNDLE"
+
 echo "==> 完成: $APP_BUNDLE"
-echo "首次运行前建议先本地签名(临时自签,避免每次重启权限失效):"
-echo "  codesign --force --deep --sign - \"$APP_BUNDLE\""
 echo ""
-echo "正式分发给他人使用需要 Developer ID 签名 + 公证(notarize),否则辅助功能权限会反复失效。"
+echo "这是 ad-hoc 自签名,不是 Apple 官方认证开发者签名。"
+echo "如果这份 .app 是分发给别人(而不是自己本机用),对方首次打开会被 Gatekeeper 拦截,"
+echo "需要去 系统设置 -> 隐私与安全性 里点\"仍要打开\"授权一次,具体说明见 README。"
+echo ""
+echo "如果办了 Apple Developer Program 账号,想要不需要用户手动授权的正式签名版本,"
+echo "参考 .github/workflows/release-notarized.yml 里的公证流程。"
 echo ""
 echo "打开方式: open $APP_BUNDLE"
