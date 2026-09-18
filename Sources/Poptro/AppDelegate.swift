@@ -30,7 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "character.bubble", accessibilityDescription: "Translator")
+            button.image = makeStatusBarIcon()
+            button.imagePosition = .imageOnly
+            button.imageScaling = .scaleProportionallyDown
         }
 
         let menu = NSMenu()
@@ -42,6 +44,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item.target = self
         }
         statusItem.menu = menu
+    }
+
+    /// Monochrome companion to the app icon: a Command mark whose lower-right
+    /// loop becomes a speech-bubble tail. Template rendering lets macOS choose
+    /// the correct foreground color for light, dark and tinted menu bars.
+    private func makeStatusBarIcon() -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size, flipped: false) { _ in
+            let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+            let command = NSImage(systemSymbolName: "command", accessibilityDescription: "Poptro")?
+                .withSymbolConfiguration(configuration)
+            command?.draw(in: NSRect(x: 2, y: 2, width: 14, height: 14))
+
+            let tail = NSBezierPath()
+            tail.move(to: NSPoint(x: 11.8, y: 4.1))
+            tail.line(to: NSPoint(x: 16.2, y: 1.2))
+            tail.line(to: NSPoint(x: 14.6, y: 6.2))
+            tail.close()
+            NSColor.black.setFill()
+            tail.fill()
+            return true
+        }
+        image.isTemplate = true
+        image.accessibilityDescription = "Poptro"
+        return image
     }
 
     @objc private func checkForUpdates() {

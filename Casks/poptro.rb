@@ -13,7 +13,7 @@ cask "poptro" do
   #   2. url 改成对应 tag 的 Release 里 Poptro.zip 的下载链接
   #   3. sha256 用 `shasum -a 256 Poptro.zip` 算出来的值替换,
   #      不知道校验值就先写 :no_check(不建议长期这样,失去了完整性校验的意义)
-  version "1.0.0"
+  version "1.0.1"
   sha256 :no_check
 
   url "https://github.com/mohist-club/Poptro/releases/download/v#{version}/Poptro.zip"
