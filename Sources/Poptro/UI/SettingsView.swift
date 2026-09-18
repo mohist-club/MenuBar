@@ -513,9 +513,10 @@ struct ServicesSettingsView: View {
             benchmarks[provider] = result
             isBenchmarking = false
             statusIsError = !result.isSuccessful
+            // 失败详情已经显示在“性能测试记录”中，底栏不再重复同一条错误。
             statusMessage = result.isSuccessful
                 ? t("连接正常，测速完成", "Connected; speed test complete")
-                : result.errorMessage
+                : nil
         }
     }
 

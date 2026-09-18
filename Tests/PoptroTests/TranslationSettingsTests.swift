@@ -112,6 +112,24 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertTrue(decoded.isSuccessful)
     }
 
+    func testBenchmarkRecognizesTransientConnectionLoss() {
+        XCTAssertTrue(ProviderBenchmarkService.isTransientNetworkError(URLError(.networkConnectionLost)))
+        XCTAssertTrue(ProviderBenchmarkService.isTransientNetworkError(URLError(.timedOut)))
+        XCTAssertFalse(ProviderBenchmarkService.isTransientNetworkError(URLError(.notConnectedToInternet)))
+    }
+
+    func testBenchmarkLocalizesTransientNetworkError() {
+        let error = URLError(.networkConnectionLost)
+        XCTAssertEqual(
+            ProviderBenchmarkService.userFacingErrorMessage(error, language: .chinese),
+            "网络连接短暂中断，自动重试后仍未恢复，请稍后再试。"
+        )
+        XCTAssertTrue(
+            ProviderBenchmarkService.userFacingErrorMessage(error, language: .english)
+                .contains("automatic retry")
+        )
+    }
+
     func testSupportedLanguageLabelLookup() {
         XCTAssertEqual(SupportedLanguage.label(for: "KM"), "高棉语")
         XCTAssertEqual(SupportedLanguage.label(for: "ZH"), "中文(简体)")
