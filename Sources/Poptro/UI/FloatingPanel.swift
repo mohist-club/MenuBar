@@ -101,11 +101,14 @@ private struct NeutralSurface: ViewModifier {
         content
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.primary.opacity(emphasized ? 0.10 : 0.055))
+                    .fill(
+                        Color(nsColor: .controlBackgroundColor)
+                            .opacity(emphasized ? 0.72 : 0.50)
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.primary.opacity(emphasized ? 0.16 : 0.10), lineWidth: 0.7)
+                    .stroke(Color.primary.opacity(emphasized ? 0.13 : 0.085), lineWidth: 0.7)
             )
     }
 }
@@ -151,6 +154,8 @@ struct TranslationPanelView: View {
     var onTextViewReady: (NSTextView) -> Void
 
     private let cornerRadius: CGFloat = 22
+    private let readingFontSize: CGFloat = 16
+    private let readingLineSpacing: CGFloat = 4
 
     var body: some View {
         VStack(spacing: 0) {
@@ -298,52 +303,61 @@ struct TranslationPanelView: View {
             resultPane
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.primary.opacity(0.016))
+        .background(
+            Color(nsColor: .textBackgroundColor)
+                .opacity(preferences.values.glassEffectEnabled ? 0.30 : 0.12)
+        )
     }
 
     private var sourcePane: some View {
         VStack(alignment: .leading, spacing: 0) {
             SubmitTextEditor(
                 text: $state.sourceText,
-                font: .systemFont(ofSize: 18, weight: .regular),
+                font: .systemFont(ofSize: readingFontSize, weight: .regular),
+                textColor: .labelColor.withAlphaComponent(0.90),
+                lineSpacing: readingLineSpacing,
                 onSubmit: onTranslateRequested,
                 onTextViewReady: onTextViewReady
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.horizontal, 28)
-        .padding(.vertical, 26)
+        .padding(.vertical, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var resultPane: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                Group {
-                    if let error = state.errorMessage {
-                        Text(error).foregroundStyle(.red)
-                    } else if state.isLoading && state.translatedText.isEmpty {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small)
-                            Text(t("翻译中…", "Translating…")).foregroundStyle(.secondary)
-                        }
-                    } else if state.translatedText.isEmpty {
-                        Text(t("输入原文后按 Return 翻译", "Enter source text, then press Return"))
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text(state.translatedText)
-                            .foregroundStyle(.primary)
-                            .textSelection(.enabled)
-                    }
+            if let error = state.errorMessage {
+                Text(error)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else if state.isLoading && state.translatedText.isEmpty {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text(t("翻译中…", "Translating…"))
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(.secondary)
                 }
-                .font(.system(size: 18, weight: .regular))
-                .lineSpacing(6)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else if state.translatedText.isEmpty {
+                Text(t("输入原文后按 Return 翻译", "Enter source text, then press Return"))
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else {
+                ReadOnlyTextView(
+                    text: state.translatedText,
+                    font: .systemFont(ofSize: readingFontSize, weight: .regular),
+                    textColor: .labelColor.withAlphaComponent(0.90),
+                    lineSpacing: readingLineSpacing
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.horizontal, 28)
-        .padding(.vertical, 26)
+        .padding(.vertical, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
@@ -383,7 +397,7 @@ struct TranslationPanelView: View {
             .help(t("清空原文和译文（Command-Delete）", "Clear source and translation (Command-Delete)"))
         }
         .font(.system(size: 10.5, weight: .medium))
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.primary.opacity(0.66))
         .padding(.horizontal, 18)
         .frame(height: 44)
         .background(Color.primary.opacity(0.035))
