@@ -20,9 +20,9 @@ enum ProviderModelService {
         case .zhipu: return ["glm-4-flash-250414", "glm-4.7-flash"]
         case .openai: return ["gpt-4.1-mini", "gpt-4.1", "gpt-5-mini"]
         case .deepl: return []
-        case .groq: return ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
-        case .google: return ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
-        case .ollama: return []
+        case .groq: return ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"]
+        case .google: return ["gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash"]
+        case .ollama: return ["qwen3:8b"]
         }
     }
 

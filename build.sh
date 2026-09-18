@@ -8,6 +8,7 @@ BUILD_DIR=".build/release"
 APP_BUNDLE="${APP_NAME}.app"
 DIST_DIR="dist"
 DMG_PATH="${DIST_DIR}/${APP_NAME}.dmg"
+ZIP_PATH="${DIST_DIR}/${APP_NAME}.zip"
 
 echo "==> swift build (release)"
 swift build -c release
@@ -60,6 +61,10 @@ rm -f "$DMG_PATH"
 hdiutil create -volname "Poptro" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
 rm -rf "$DMG_STAGE"
 
+echo "==> 生成 Sparkle / GitHub Release ZIP"
+rm -f "$ZIP_PATH"
+ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$ZIP_PATH"
+
 echo "==> 完成: $APP_BUNDLE"
 echo ""
 echo "这是 ad-hoc 自签名,不是 Apple 官方认证开发者签名。"
@@ -71,3 +76,4 @@ echo "参考 .github/workflows/release-notarized.yml 里的公证流程。"
 echo ""
 echo "打开方式: open $APP_BUNDLE"
 echo "DMG 安装包: ${DMG_PATH}（打开后将 App 拖入 Applications）"
+echo "ZIP 更新包: ${ZIP_PATH}"

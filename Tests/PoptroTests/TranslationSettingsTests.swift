@@ -15,8 +15,8 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertEqual(decoded.provider, .openai)
         XCTAssertEqual(decoded.model, "gpt-4.1-mini")
         XCTAssertEqual(decoded.zhipuModel, "glm-4-flash-250414")
-        XCTAssertEqual(decoded.groqModel, "llama-3.1-8b-instant")
-        XCTAssertEqual(decoded.googleModel, "gemini-2.5-flash")
+        XCTAssertEqual(decoded.groqModel, "qwen/qwen3.8-27b")
+        XCTAssertEqual(decoded.googleModel, "gemini-3.5-flash-lite")
         XCTAssertEqual(decoded.primaryLanguageCode, "ZH")
         XCTAssertEqual(decoded.secondaryLanguageCode, "EN-US")
         XCTAssertEqual(decoded.panelAppearanceMode, .light)
@@ -72,6 +72,23 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertTrue(TranslationProvider.groq.supportsRemoteModelDiscovery)
         XCTAssertTrue(TranslationProvider.google.supportsRemoteModelDiscovery)
         XCTAssertFalse(TranslationProvider.deepl.supportsRemoteModelDiscovery)
+    }
+
+    func testBenchmarkResultRoundTrip() throws {
+        let original = ProviderBenchmarkResult(
+            provider: .groq,
+            model: "qwen/qwen3.8-27b",
+            testedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            firstTokenSeconds: 0.39,
+            totalSeconds: 0.74,
+            charactersPerSecond: 68,
+            errorMessage: nil
+        )
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(ProviderBenchmarkResult.self, from: data)
+        XCTAssertEqual(decoded, original)
+        XCTAssertTrue(decoded.isSuccessful)
     }
 
     func testSupportedLanguageLabelLookup() {

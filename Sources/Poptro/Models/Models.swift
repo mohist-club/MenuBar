@@ -168,8 +168,8 @@ struct TranslationSettings: Codable {
     // 想要更高质量可在设置里换成 gpt-5.4-mini 或 gpt-5.4(会稍慢、稍贵)。
     var model: String = "gpt-4.1-mini"
     var zhipuModel: String = "glm-4-flash-250414"
-    var groqModel: String = "llama-3.1-8b-instant"
-    var googleModel: String = "gemini-2.5-flash"
+    var groqModel: String = "qwen/qwen3.8-27b"
+    var googleModel: String = "gemini-3.5-flash-lite"
 
     // 只负责"风格/格式"规则,方向(翻成哪种语言)在发请求时由代码明确指定,
     // 这里不再包含"自动判断中英方向"这句话——之前这句话和运行时追加的强制方向指令冲突,
@@ -188,7 +188,7 @@ struct TranslationSettings: Codable {
 
     // MARK: Ollama 专用(本地跑的模型,不需要 API Key)
     var ollamaBaseURL: String = "http://localhost:11434"
-    var ollamaModel: String = "llama3.2"
+    var ollamaModel: String = "qwen3:8b"
 
     /// 浅色/深色/跟随系统,默认浅色
     var panelAppearanceMode: PanelAppearanceMode = .light
@@ -207,14 +207,14 @@ struct TranslationSettings: Codable {
         provider = try c.decodeIfPresent(TranslationProvider.self, forKey: .provider) ?? .zhipu
         model = try c.decodeIfPresent(String.self, forKey: .model) ?? "gpt-4.1-mini"
         zhipuModel = try c.decodeIfPresent(String.self, forKey: .zhipuModel) ?? "glm-4-flash-250414"
-        groqModel = try c.decodeIfPresent(String.self, forKey: .groqModel) ?? "llama-3.1-8b-instant"
-        googleModel = try c.decodeIfPresent(String.self, forKey: .googleModel) ?? "gemini-2.5-flash"
+        groqModel = try c.decodeIfPresent(String.self, forKey: .groqModel) ?? "qwen/qwen3.8-27b"
+        googleModel = try c.decodeIfPresent(String.self, forKey: .googleModel) ?? "gemini-3.5-flash-lite"
         customSystemPrompt = try c.decodeIfPresent(String.self, forKey: .customSystemPrompt)
             ?? TranslationSettings().customSystemPrompt
         primaryLanguageCode = try c.decodeIfPresent(String.self, forKey: .primaryLanguageCode) ?? "ZH"
         secondaryLanguageCode = try c.decodeIfPresent(String.self, forKey: .secondaryLanguageCode) ?? "EN-US"
         ollamaBaseURL = try c.decodeIfPresent(String.self, forKey: .ollamaBaseURL) ?? "http://localhost:11434"
-        ollamaModel = try c.decodeIfPresent(String.self, forKey: .ollamaModel) ?? "llama3.2"
+        ollamaModel = try c.decodeIfPresent(String.self, forKey: .ollamaModel) ?? "qwen3:8b"
         panelAppearanceMode = try c.decodeIfPresent(PanelAppearanceMode.self, forKey: .panelAppearanceMode)
             ?? .light
     }
