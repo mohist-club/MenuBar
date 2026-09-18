@@ -13,7 +13,7 @@ let package = Package(
             name: "Poptro",
             dependencies: ["KeyboardShortcuts", "Sparkle"],
             path: "Sources/Poptro",
-            resources: [.copy("Resources/GoogleG.png")]
+            exclude: ["Resources/GoogleG.png"]
         ),
         .testTarget(
             name: "PoptroTests",

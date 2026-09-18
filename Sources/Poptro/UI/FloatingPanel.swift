@@ -137,7 +137,12 @@ private struct LanguageSelectorLabel: View {
 private struct GoogleBrandIcon: View {
     var body: some View {
         Group {
-            if let url = Bundle.module.url(forResource: "GoogleG", withExtension: "png"),
+            // Do not use `Bundle.module` here. SwiftPM's generated accessor calls
+            // fatalError when a packaged resource bundle is malformed or missing,
+            // which used to crash the entire translation panel on launch. The icon
+            // is copied into the app's main Resources directory by build.sh, and a
+            // missing optional icon now degrades safely to an SF Symbol.
+            if let url = Bundle.main.url(forResource: "GoogleG", withExtension: "png"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image).resizable().interpolation(.high)
             } else {

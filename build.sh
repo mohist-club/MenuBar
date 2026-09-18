@@ -20,6 +20,7 @@ mkdir -p "$APP_BUNDLE/Contents/Resources"
 
 cp "$BUILD_DIR/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 cp "Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
+cp "Sources/Poptro/Resources/GoogleG.png" "$APP_BUNDLE/Contents/Resources/GoogleG.png"
 
 echo "==> 生成图标(iconset -> icns)"
 if command -v iconutil &> /dev/null; then
@@ -32,6 +33,9 @@ fi
 echo "==> 复制依赖库的资源 bundle(如 KeyboardShortcuts 自带的资源)"
 shopt -s nullglob
 for bundle in "$BUILD_DIR"/*.bundle; do
+    if [ "$(basename "$bundle")" = "Poptro_Poptro.bundle" ]; then
+        continue
+    fi
     echo "   - $(basename "$bundle")"
     cp -R "$bundle" "$APP_BUNDLE/Contents/Resources/"
 done
