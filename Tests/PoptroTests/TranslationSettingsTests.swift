@@ -13,6 +13,7 @@ final class TranslationSettingsTests: XCTestCase {
 
         // 缺失的字段应该用默认值填上,而不是让整体解码失败
         XCTAssertEqual(decoded.provider, .openai)
+        XCTAssertTrue(decoded.configuredProviders.isEmpty)
         XCTAssertEqual(decoded.model, "gpt-4.1-mini")
         XCTAssertEqual(decoded.zhipuModel, "glm-4-flash-250414")
         XCTAssertEqual(decoded.groqModel, "qwen/qwen3.8-27b")
@@ -72,6 +73,26 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertTrue(TranslationProvider.groq.supportsRemoteModelDiscovery)
         XCTAssertTrue(TranslationProvider.google.supportsRemoteModelDiscovery)
         XCTAssertFalse(TranslationProvider.deepl.supportsRemoteModelDiscovery)
+    }
+
+    func testConfiguredProvidersRoundTrip() throws {
+        var settings = TranslationSettings()
+        settings.configuredProviders = [.deepl, .ollama]
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(TranslationSettings.self, from: data)
+
+        XCTAssertEqual(decoded.configuredProviders, [.deepl, .ollama])
+    }
+
+    func testConfiguredLocalProviderRequiresSavedConfigurationValues() {
+        var settings = TranslationSettings()
+        settings.configuredProviders = [.ollama]
+
+        XCTAssertEqual(settings.availableConfiguredProviders(), [.ollama])
+
+        settings.ollamaModel = ""
+        XCTAssertTrue(settings.availableConfiguredProviders().isEmpty)
     }
 
     func testBenchmarkResultRoundTrip() throws {

@@ -460,10 +460,20 @@ struct ServicesSettingsView: View {
         benchmarks = ProviderBenchmarkStore.load()
     }
     private func persist(showConfirmation: Bool = true) {
-        settings.save()
         for provider in TranslationProvider.allCases where provider.requiresAPIKey {
-            KeychainHelper.saveAPIKey(apiKeys[provider, default: ""], for: provider)
+            let key = apiKeys[provider, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
+            if key.isEmpty {
+                KeychainHelper.deleteAPIKey(for: provider)
+                settings.configuredProviders.remove(provider)
+            } else {
+                KeychainHelper.saveAPIKey(key, for: provider)
+                settings.configuredProviders.insert(provider)
+            }
         }
+        if selectedProvider == .ollama {
+            settings.configuredProviders.insert(.ollama)
+        }
+        settings.save()
         if showConfirmation {
             showSaved = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { showSaved = false }

@@ -162,6 +162,9 @@ enum SupportedLanguage {
 /// 翻译相关设置(API Key 单独存 Keychain,这里只存非敏感配置)
 struct TranslationSettings: Codable {
     var provider: TranslationProvider = .zhipu
+    /// 用户在“服务”设置中实际保存过的服务。远程服务仍会在读取时校验
+    /// API Key，避免清空 Key 后继续出现在翻译窗口的快速切换菜单里。
+    var configuredProviders: Set<TranslationProvider> = []
 
     // gpt-4.1-mini: 无推理步骤、延迟低,1M 超大上下文(长文不怕截断),
     // 价格便宜,是"划词弹窗即时翻译"这个场景质量/速度的最佳平衡点。
@@ -205,6 +208,10 @@ struct TranslationSettings: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         provider = try c.decodeIfPresent(TranslationProvider.self, forKey: .provider) ?? .zhipu
+        configuredProviders = try c.decodeIfPresent(
+            Set<TranslationProvider>.self,
+            forKey: .configuredProviders
+        ) ?? []
         model = try c.decodeIfPresent(String.self, forKey: .model) ?? "gpt-4.1-mini"
         zhipuModel = try c.decodeIfPresent(String.self, forKey: .zhipuModel) ?? "glm-4-flash-250414"
         groqModel = try c.decodeIfPresent(String.self, forKey: .groqModel) ?? "qwen/qwen3.8-27b"
@@ -223,6 +230,25 @@ struct TranslationSettings: Codable {
     /// 设置界面和实际发起翻译请求的地方都应该用这个,而不是直接调 LocalStore.load。
     static func loadCurrent() -> TranslationSettings {
         var settings = LocalStore.load(TranslationSettings.self, filename: filename, default: TranslationSettings())
+        var configured = settings.configuredProviders
+
+        // 兼容旧版本：已经保存过 API Key 的服务直接迁移为“已配置”。
+        for provider in TranslationProvider.allCases where provider.requiresAPIKey {
+            if let key = KeychainHelper.loadAPIKey(for: provider),
+               !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                configured.insert(provider)
+            } else {
+                configured.remove(provider)
+            }
+        }
+        // 旧版本若已把 Ollama 设为默认服务，视为用户配置过本地服务。
+        if settings.provider == .ollama {
+            configured.insert(.ollama)
+        }
+        if configured != settings.configuredProviders {
+            settings.configuredProviders = configured
+            settings.save()
+        }
         if deprecatedModels.contains(settings.model) {
             settings.model = "gpt-4.1-mini"
             settings.save()
@@ -232,6 +258,20 @@ struct TranslationSettings: Codable {
 
     func save() {
         LocalStore.save(self, filename: Self.filename)
+    }
+
+    /// 翻译窗口只展示真正可用的已配置服务。远程服务以本机保存的
+    /// 非空 API Key 为准；Ollama 以用户是否在服务页保存过为准。
+    func availableConfiguredProviders() -> [TranslationProvider] {
+        TranslationProvider.allCases.filter { provider in
+            guard configuredProviders.contains(provider) else { return false }
+            if provider == .ollama {
+                return !ollamaBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && !ollamaModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            guard let key = KeychainHelper.loadAPIKey(for: provider) else { return false }
+            return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 
     /// 按语言代码取展示名(不区分服务商,两边共用同一套语言目录)

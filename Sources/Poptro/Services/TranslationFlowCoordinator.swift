@@ -41,11 +41,15 @@ final class TranslationFlowCoordinator {
         currentPanel?.close()
 
         let panel = FloatingTranslationPanel()
-        let settings = TranslationSettings.loadCurrent()
+        var settings = TranslationSettings.loadCurrent()
         let preferences = AppPreferencesStore.shared.values
-        panel.state.providerDisplayName = settings.provider.localizedDisplayName(
-            language: preferences.interfaceLanguage
-        )
+        let availableProviders = settings.availableConfiguredProviders()
+        if !availableProviders.contains(settings.provider), let fallback = availableProviders.first {
+            settings.provider = fallback
+            settings.save()
+        }
+        panel.state.selectedProvider = settings.provider
+        panel.state.availableProviders = availableProviders
         panel.applyAppearance(mode: preferences.appearanceMode)
 
         panel.onTranslateRequested = { [weak self, weak panel] in
@@ -59,9 +63,9 @@ final class TranslationFlowCoordinator {
                 detectSourceLanguage: panel.state.sourceLanguageIsAutomatic
             )
         }
-        panel.onSwitchProvider = { [weak self, weak panel] in
+        panel.onSelectProvider = { [weak self, weak panel] provider in
             guard let self, let panel else { return }
-            self.switchProvider(in: panel)
+            self.selectProvider(provider, in: panel)
         }
         panel.onPickTargetLanguage = { [weak self, weak panel] code in
             guard let self, let panel else { return }
@@ -86,18 +90,15 @@ final class TranslationFlowCoordinator {
         return panel
     }
 
-    /// 顶部"切换翻译引擎"按钮:在已启用的服务商之间循环切换,立即持久化,
-    /// 如果当前已经有内容,顺手用新引擎重新翻译一次,方便直接对比效果
-    private func switchProvider(in panel: FloatingTranslationPanel) {
+    /// 底部服务菜单只会传入已经配置的服务。选择后立即持久化；若当前已有
+    /// 原文，则用新服务重新翻译，便于直接比较结果和速度。
+    private func selectProvider(_ provider: TranslationProvider, in panel: FloatingTranslationPanel) {
+        guard panel.state.availableProviders.contains(provider) else { return }
         var settings = TranslationSettings.loadCurrent()
-        let all = TranslationProvider.allCases
-        guard let currentIndex = all.firstIndex(of: settings.provider) else { return }
-        settings.provider = all[(currentIndex + 1) % all.count]
+        guard settings.provider != provider else { return }
+        settings.provider = provider
         settings.save()
-
-        panel.state.providerDisplayName = settings.provider.localizedDisplayName(
-            language: AppPreferencesStore.shared.values.interfaceLanguage
-        )
+        panel.state.selectedProvider = provider
 
         let text = panel.state.sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !text.isEmpty {
@@ -128,11 +129,15 @@ final class TranslationFlowCoordinator {
         panel.state.translatedText = ""
         panel.state.errorMessage = nil
         panel.state.isLoading = true
+        let translationID = UUID()
+        panel.state.activeTranslationID = translationID
 
         let onToken: (String) -> Void = { [weak panel] token in
+            guard panel?.state.activeTranslationID == translationID else { return }
             panel?.state.translatedText += token
         }
         let onComplete: (Error?) -> Void = { [weak panel] error in
+            guard panel?.state.activeTranslationID == translationID else { return }
             panel?.state.isLoading = false
             if let error {
                 panel?.state.errorMessage = error.localizedDescription

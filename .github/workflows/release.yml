@@ -42,6 +42,13 @@ jobs:
             Poptro.zip
             dist/Poptro.dmg
           body: |
+            ## Poptro ${{ github.ref_name }}
+
+            - 全新原生双栏翻译界面，统一浅色、深色和玻璃材质表现
+            - 左下角可在已配置的翻译服务之间快速切换
+            - `Command + Return` 复制译文，`Command + Delete` 重置当前内容
+            - 重置会同时终止当前翻译结果写入，避免旧请求重新填回内容
+
             ⚠️ 这个版本是 ad-hoc 自签名,不是 Apple 官方认证开发者签名。
             首次打开会被系统拦截提示"无法验证开发者"或"已损坏",这是正常现象,不是文件真的坏了。
 

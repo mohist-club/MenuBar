@@ -10,10 +10,12 @@ final class TranslationPanelState: ObservableObject {
     @Published var targetLanguageCode = "EN-US"
     @Published var sourceLanguageCode = "EN-US"
     @Published var sourceLanguageIsAutomatic = true
-    @Published var providerDisplayName = "OpenAI"
+    @Published var selectedProvider: TranslationProvider = .zhipu
+    @Published var availableProviders: [TranslationProvider] = []
     @Published var isPinned = false
 
     var isManualMode = false
+    var activeTranslationID = UUID()
 
     var statusText: String {
         if isLoading { return "正在翻译…" }
@@ -134,31 +136,12 @@ private struct LanguageSelectorLabel: View {
     }
 }
 
-private struct GoogleBrandIcon: View {
-    var body: some View {
-        Group {
-            // Do not use `Bundle.module` here. SwiftPM's generated accessor calls
-            // fatalError when a packaged resource bundle is malformed or missing,
-            // which used to crash the entire translation panel on launch. The icon
-            // is copied into the app's main Resources directory by build.sh, and a
-            // missing optional icon now degrades safely to an SF Symbol.
-            if let url = Bundle.main.url(forResource: "GoogleG", withExtension: "png"),
-               let image = NSImage(contentsOf: url) {
-                Image(nsImage: image).resizable().interpolation(.high)
-            } else {
-                Image(systemName: "magnifyingglass").resizable()
-            }
-        }
-        .frame(width: 14, height: 14)
-    }
-}
-
 struct TranslationPanelView: View {
     @ObservedObject var state: TranslationPanelState
     @ObservedObject private var preferences = AppPreferencesStore.shared
     var onTranslateRequested: () -> Void
     var onClear: () -> Void
-    var onSwitchProvider: () -> Void
+    var onSelectProvider: (TranslationProvider) -> Void
     var onPickSourceLanguage: (String) -> Void
     var onPickTargetLanguage: (String) -> Void
     var onSwapLanguages: () -> Void
@@ -210,22 +193,11 @@ struct TranslationPanelView: View {
 
             Spacer(minLength: 10)
 
-            compactIconButton(
-                systemName: state.isPinned ? "pin.fill" : "pin",
-                help: state.isPinned ? t("取消固定窗口", "Unpin Window") : t("固定窗口", "Pin Window")
-            ) {
-                state.isPinned.toggle()
-            }
-            compactIconButton(systemName: "eraser", help: t("清除内容", "Clear"), action: onClear)
-            compactIconButton(
-                systemName: "arrow.triangle.2.circlepath",
-                help: t("切换翻译服务", "Switch Provider"),
-                action: onSwitchProvider
-            )
-
             Button(action: onOpenGoogleAI) {
                 HStack(spacing: 6) {
-                    GoogleBrandIcon()
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.secondary)
                     Text(t("在 Google AI 中查看", "View in Google AI"))
                     Image(systemName: "arrow.up.right")
                         .font(.system(size: 9, weight: .semibold))
@@ -248,20 +220,33 @@ struct TranslationPanelView: View {
     }
 
     private var languageBar: some View {
-        HStack(spacing: 10) {
-            Menu {
-                Button(t("自动检测", "Auto Detect")) {
-                    state.sourceLanguageIsAutomatic = true
-                    onTranslateRequested()
+        HStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Text(t("原文", "Source"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Menu {
+                    Button(t("自动检测", "Auto Detect")) {
+                        state.sourceLanguageIsAutomatic = true
+                        onTranslateRequested()
+                    }
+                    Divider()
+                    ForEach(SupportedLanguage.options, id: \.code) { option in
+                        Button(localizedLanguage(option.code)) { onPickSourceLanguage(option.code) }
+                    }
+                } label: {
+                    LanguageSelectorLabel(title: sourceLanguageTitle)
                 }
-                Divider()
-                ForEach(SupportedLanguage.options, id: \.code) { option in
-                    Button(localizedLanguage(option.code)) { onPickSourceLanguage(option.code) }
+                .menuStyle(.borderlessButton)
+                .frame(width: 150)
+
+                Spacer(minLength: 4)
+                compactIconButton(systemName: "speaker.wave.2", help: t("朗读原文", "Speak Source")) {
+                    AudioSpeaker.shared.speak(state.sourceText, languageCode: state.sourceLanguageCode)
                 }
-            } label: {
-                LanguageSelectorLabel(title: sourceLanguageTitle)
+                compactIconButton(systemName: "doc.on.doc", help: t("复制原文", "Copy Source"), action: onCopySource)
             }
-            .menuStyle(.borderlessButton)
             .frame(maxWidth: .infinity)
 
             Button(action: onSwapLanguages) {
@@ -274,14 +259,27 @@ struct TranslationPanelView: View {
             .disabled(state.sourceText.isEmpty || state.translatedText.isEmpty || state.isLoading)
             .help(t("互换语言和文本", "Swap Languages and Text"))
 
-            Menu {
-                ForEach(SupportedLanguage.options, id: \.code) { option in
-                    Button(localizedLanguage(option.code)) { onPickTargetLanguage(option.code) }
+            HStack(spacing: 8) {
+                Text(t("译文", "Translation"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Menu {
+                    ForEach(SupportedLanguage.options, id: \.code) { option in
+                        Button(localizedLanguage(option.code)) { onPickTargetLanguage(option.code) }
+                    }
+                } label: {
+                    LanguageSelectorLabel(title: localizedLanguage(state.targetLanguageCode))
                 }
-            } label: {
-                LanguageSelectorLabel(title: localizedLanguage(state.targetLanguageCode))
+                .menuStyle(.borderlessButton)
+                .frame(width: 150)
+
+                Spacer(minLength: 4)
+                compactIconButton(systemName: "speaker.wave.2", help: t("朗读译文", "Speak Translation")) {
+                    AudioSpeaker.shared.speak(state.translatedText, languageCode: state.targetLanguageCode)
+                }
+                compactIconButton(systemName: "doc.on.doc", help: t("复制译文", "Copy Translation"), action: onCopyTranslated)
             }
-            .menuStyle(.borderlessButton)
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 18)
@@ -304,38 +302,22 @@ struct TranslationPanelView: View {
     }
 
     private var sourcePane: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(t("原文", "Source"))
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-
+        VStack(alignment: .leading, spacing: 0) {
             SubmitTextEditor(
                 text: $state.sourceText,
-                font: .systemFont(ofSize: 22, weight: .regular),
+                font: .systemFont(ofSize: 18, weight: .regular),
                 onSubmit: onTranslateRequested,
                 onTextViewReady: onTextViewReady
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            HStack(spacing: 7) {
-                paneAction(title: t("朗读", "Speak"), systemName: "speaker.wave.2") {
-                    AudioSpeaker.shared.speak(state.sourceText, languageCode: state.sourceLanguageCode)
-                }
-                paneAction(title: t("复制", "Copy"), systemName: "doc.on.doc", action: onCopySource)
-                Spacer()
-            }
         }
-        .padding(.horizontal, 26)
-        .padding(.vertical, 24)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 26)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var resultPane: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(t("译文", "Translation"))
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-
+        VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 Group {
                     if let error = state.errorMessage {
@@ -354,29 +336,20 @@ struct TranslationPanelView: View {
                             .textSelection(.enabled)
                     }
                 }
-                .font(.system(size: 22, weight: .regular))
-                .lineSpacing(4)
+                .font(.system(size: 18, weight: .regular))
+                .lineSpacing(6)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            HStack(spacing: 7) {
-                paneAction(title: t("朗读", "Speak"), systemName: "speaker.wave.2") {
-                    AudioSpeaker.shared.speak(state.translatedText, languageCode: state.targetLanguageCode)
-                }
-                paneAction(title: t("复制", "Copy"), systemName: "doc.on.doc", action: onCopyTranslated)
-                Spacer()
-            }
         }
-        .padding(.horizontal, 26)
-        .padding(.vertical, 24)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 26)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var statusBar: some View {
-        HStack(spacing: 6) {
-            Text("\(localizedProviderName) · \(localizedStatusText)")
-                .lineLimit(1)
+        HStack(spacing: 8) {
+            providerMenu
             Spacer(minLength: 12)
             Button(action: onCopyTranslated) {
                 HStack(spacing: 6) {
@@ -392,12 +365,80 @@ struct TranslationPanelView: View {
             }
             .buttonStyle(.plain)
             .disabled(state.translatedText.isEmpty)
+
+            Button(action: onClear) {
+                HStack(spacing: 6) {
+                    Text(t("重置", "Reset"))
+                    HStack(spacing: 3) {
+                        shortcutKey("⌘")
+                        shortcutKey("⌫")
+                    }
+                }
+                .padding(.horizontal, 9)
+                .frame(height: 28)
+                .neutralSurface(cornerRadius: 8)
+            }
+            .buttonStyle(.plain)
+            .disabled(state.sourceText.isEmpty && state.translatedText.isEmpty)
+            .help(t("清空原文和译文（Command-Delete）", "Clear source and translation (Command-Delete)"))
         }
         .font(.system(size: 10.5, weight: .medium))
         .foregroundStyle(.secondary)
         .padding(.horizontal, 18)
         .frame(height: 44)
         .background(Color.primary.opacity(0.035))
+    }
+
+    private var providerMenu: some View {
+        Menu {
+            ForEach(state.availableProviders) { provider in
+                Button {
+                    onSelectProvider(provider)
+                } label: {
+                    if provider == state.selectedProvider {
+                        Label(provider.localizedDisplayName(language: language), systemImage: "checkmark")
+                    } else {
+                        Text(provider.localizedDisplayName(language: language))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: state.availableProviders.isEmpty ? "gearshape" : providerIcon(state.selectedProvider))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Text(providerMenuTitle)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8.5, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .neutralSurface(cornerRadius: 8)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(state.availableProviders.isEmpty)
+        .help(t("切换已配置的翻译服务", "Switch Configured Translation Service"))
+    }
+
+    private var providerMenuTitle: String {
+        guard !state.availableProviders.isEmpty else {
+            return t("未配置服务", "No Configured Service")
+        }
+        return state.selectedProvider.localizedDisplayName(language: language)
+    }
+
+    private func providerIcon(_ provider: TranslationProvider) -> String {
+        switch provider {
+        case .zhipu: return "sparkles"
+        case .openai: return "brain.head.profile"
+        case .deepl: return "character.book.closed"
+        case .groq: return "bolt.horizontal.circle"
+        case .google: return "g.circle"
+        case .ollama: return "desktopcomputer"
+        }
     }
 
     private func compactIconButton(
@@ -416,25 +457,6 @@ struct TranslationPanelView: View {
         .help(help)
     }
 
-    private func paneAction(
-        title: String,
-        systemName: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: systemName)
-                Text(title)
-            }
-            .font(.system(size: 10.5, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .frame(height: 28)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
     private func shortcutKey(_ label: String) -> some View {
         Text(label)
             .font(.system(size: 9.5, weight: .medium))
@@ -450,17 +472,6 @@ struct TranslationPanelView: View {
     }
 
     private var language: InterfaceLanguage { preferences.values.interfaceLanguage }
-
-    private var localizedStatusText: String {
-        if state.isLoading { return t("正在翻译…", "Translating…") }
-        if state.errorMessage != nil { return t("翻译失败", "Translation Failed") }
-        if state.translatedText.isEmpty { return t("等待输入", "Waiting for Input") }
-        return t("翻译完成", "Translation Complete")
-    }
-
-    private var localizedProviderName: String {
-        TranslationSettings.loadCurrent().provider.localizedDisplayName(language: language)
-    }
 
     private func localizedLanguage(_ code: String) -> String {
         SupportedLanguage.localizedLabel(for: code, language: language)
@@ -484,7 +495,7 @@ private final class TransparentHostingView<Content: View>: NSHostingView<Content
 final class FloatingTranslationPanel: NSPanel {
     let state = TranslationPanelState()
     var onTranslateRequested: (() -> Void)?
-    var onSwitchProvider: (() -> Void)?
+    var onSelectProvider: ((TranslationProvider) -> Void)?
     var onPickSourceLanguage: ((String) -> Void)?
     var onPickTargetLanguage: ((String) -> Void)?
     var onSwapLanguages: (() -> Void)?
@@ -519,7 +530,7 @@ final class FloatingTranslationPanel: NSPanel {
             state: state,
             onTranslateRequested: { [weak self] in self?.onTranslateRequested?() },
             onClear: { [weak self] in self?.clearAll() },
-            onSwitchProvider: { [weak self] in self?.onSwitchProvider?() },
+            onSelectProvider: { [weak self] provider in self?.onSelectProvider?(provider) },
             onPickSourceLanguage: { [weak self] code in self?.onPickSourceLanguage?(code) },
             onPickTargetLanguage: { [weak self] code in self?.onPickTargetLanguage?(code) },
             onSwapLanguages: { [weak self] in self?.onSwapLanguages?() },
@@ -583,10 +594,12 @@ final class FloatingTranslationPanel: NSPanel {
     }
 
     private func clearAll() {
+        state.activeTranslationID = UUID()
         state.sourceText = ""
         state.translatedText = ""
         state.errorMessage = nil
         state.isLoading = false
+        focusInput()
     }
 
     private func copy(_ text: String?) {
@@ -698,5 +711,15 @@ final class FloatingTranslationPanel: NSPanel {
     }
 
     override func cancelOperation(_ sender: Any?) { close() }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        if event.keyCode == 51, modifiers == [.command] {
+            clearAll()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
     override var canBecomeKey: Bool { true }
 }
