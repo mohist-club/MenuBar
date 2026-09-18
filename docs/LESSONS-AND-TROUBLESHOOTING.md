@@ -202,3 +202,16 @@ Release workflow 由 `v*` 标签触发；只推送 `main` 不会创建 Release�
 4. 等待 Release workflow 完成。
 5. 确认 Release 同时包含 `Poptro.dmg` 和 `Poptro.zip`。
 
+## 14. 暗黑模式下正文仍然是黑色
+
+**根因**
+
+`NSTextView` 把写入 `textStorage` 的颜色按当时外观解析成静态值。面板在创建后再切换为
+深色外观时，SwiftUI 的语义色会更新，但 AppKit 文本存储里原先的黑色不会自动重算。
+
+**标准解法**
+
+- 文本视图监听 `viewDidChangeEffectiveAppearance()`。
+- 在该回调内按 `effectiveAppearance` 重新解析 `NSColor.labelColor`。
+- 同步更新正文属性、输入属性和插入光标颜色。
+- 自动测试先切深色再切浅色，分别验证正文亮度，而不是只检查颜色对象名称。

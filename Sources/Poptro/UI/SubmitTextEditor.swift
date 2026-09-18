@@ -16,11 +16,38 @@ private final class OverlayTextScrollView: NSScrollView {
     }
 }
 
+/// NSTextView 会把写入 textStorage 的颜色解析成当时外观下的静态颜色。
+/// 窗口稍后切换深浅外观时必须重新解析系统 labelColor，否则暗黑模式会保留黑字。
+private final class AppearanceAwareTextView: NSTextView {
+    var foregroundOpacity: CGFloat = 0.90
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        refreshForegroundColor()
+    }
+
+    func refreshForegroundColor() {
+        var color = NSColor.labelColor
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            color = NSColor.labelColor.withAlphaComponent(foregroundOpacity)
+        }
+        textColor = color
+        insertionPointColor = color
+
+        let fullRange = NSRange(location: 0, length: string.utf16.count)
+        textStorage?.addAttribute(.foregroundColor, value: color, range: fullRange)
+
+        var attributes = typingAttributes
+        attributes[.foregroundColor] = color
+        typingAttributes = attributes
+    }
+}
+
 /// 输入框交互:普通回车 = 提交翻译,Shift+回车 = 换行
 struct SubmitTextEditor: NSViewRepresentable {
     @Binding var text: String
     var font: NSFont = .systemFont(ofSize: 15)
-    var textColor: NSColor = .labelColor.withAlphaComponent(0.90)
+    var foregroundOpacity: CGFloat = 0.90
     var lineSpacing: CGFloat = 4
     var onSubmit: () -> Void
     /// 把内部真正的 NSTextView 暴露出去,方便外部手动设置第一响应者(让输入框自动获得焦点)
@@ -29,7 +56,8 @@ struct SubmitTextEditor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = NSTextView()
+        let textView = AppearanceAwareTextView()
+        textView.foregroundOpacity = foregroundOpacity
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.backgroundColor = .clear
@@ -41,7 +69,6 @@ struct SubmitTextEditor: NSViewRepresentable {
         applyTypography(to: textView)
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = true
-        textView.insertionPointColor = textColor
 
         let scrollView = OverlayTextScrollView()
         scrollView.documentView = textView
@@ -61,30 +88,29 @@ struct SubmitTextEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.parent = self
-        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard let textView = nsView.documentView as? AppearanceAwareTextView else { return }
+        textView.foregroundOpacity = foregroundOpacity
         if textView.string != text {
             textView.string = text
         }
         applyTypography(to: textView)
     }
 
-    private func applyTypography(to textView: NSTextView) {
+    private func applyTypography(to textView: AppearanceAwareTextView) {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing
         textView.font = font
-        textView.textColor = textColor
         textView.defaultParagraphStyle = paragraphStyle
         let fullRange = NSRange(location: 0, length: textView.string.utf16.count)
         textView.textStorage?.addAttributes([
             .font: font,
-            .foregroundColor: textColor,
             .paragraphStyle: paragraphStyle
         ], range: fullRange)
         textView.typingAttributes = [
             .font: font,
-            .foregroundColor: textColor,
             .paragraphStyle: paragraphStyle
         ]
+        textView.refreshForegroundColor()
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -120,11 +146,12 @@ struct SubmitTextEditor: NSViewRepresentable {
 struct ReadOnlyTextView: NSViewRepresentable {
     let text: String
     var font: NSFont = .systemFont(ofSize: 16)
-    var textColor: NSColor = .labelColor.withAlphaComponent(0.90)
+    var foregroundOpacity: CGFloat = 0.90
     var lineSpacing: CGFloat = 4
 
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = NSTextView()
+        let textView = AppearanceAwareTextView()
+        textView.foregroundOpacity = foregroundOpacity
         textView.isEditable = false
         textView.isSelectable = true
         textView.isRichText = false
@@ -151,24 +178,24 @@ struct ReadOnlyTextView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard let textView = nsView.documentView as? AppearanceAwareTextView else { return }
+        textView.foregroundOpacity = foregroundOpacity
         if textView.string != text {
             textView.string = text
         }
         applyTypography(to: textView)
     }
 
-    private func applyTypography(to textView: NSTextView) {
+    private func applyTypography(to textView: AppearanceAwareTextView) {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing
         textView.font = font
-        textView.textColor = textColor
         textView.defaultParagraphStyle = paragraphStyle
         let fullRange = NSRange(location: 0, length: textView.string.utf16.count)
         textView.textStorage?.addAttributes([
             .font: font,
-            .foregroundColor: textColor,
             .paragraphStyle: paragraphStyle
         ], range: fullRange)
+        textView.refreshForegroundColor()
     }
 }

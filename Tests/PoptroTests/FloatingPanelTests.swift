@@ -51,6 +51,48 @@ final class FloatingPanelTests: XCTestCase {
         panel.close()
     }
 
+    func testTranslationTextColorsFollowPanelAppearance() {
+        _ = NSApplication.shared
+        let panel = FloatingTranslationPanel()
+        panel.state.sourceText = "Dark mode source"
+        panel.state.translatedText = "暗黑模式译文"
+
+        panel.applyAppearance(mode: .dark)
+        settle(panel)
+        let darkLuminances = textViews(in: panel).compactMap(relativeLuminance)
+        XCTAssertGreaterThanOrEqual(darkLuminances.count, 2)
+        XCTAssertTrue(darkLuminances.allSatisfy { $0 > 0.70 })
+
+        panel.applyAppearance(mode: .light)
+        settle(panel)
+        let lightLuminances = textViews(in: panel).compactMap(relativeLuminance)
+        XCTAssertGreaterThanOrEqual(lightLuminances.count, 2)
+        XCTAssertTrue(lightLuminances.allSatisfy { $0 < 0.30 })
+        panel.close()
+    }
+
+    private func settle(_ panel: FloatingTranslationPanel) {
+        panel.contentView?.layoutSubtreeIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        panel.contentView?.layoutSubtreeIfNeeded()
+    }
+
+    private func textViews(in panel: FloatingTranslationPanel) -> [NSTextView] {
+        descendants(of: panel.contentView)
+            .compactMap { ($0 as? NSScrollView)?.documentView as? NSTextView }
+    }
+
+    private func relativeLuminance(_ textView: NSTextView) -> CGFloat? {
+        var luminance: CGFloat?
+        textView.effectiveAppearance.performAsCurrentDrawingAppearance {
+            guard let color = textView.textColor?.usingColorSpace(.deviceRGB) else { return }
+            luminance = (0.2126 * color.redComponent)
+                + (0.7152 * color.greenComponent)
+                + (0.0722 * color.blueComponent)
+        }
+        return luminance
+    }
+
     private func descendants(of view: NSView?) -> [NSView] {
         guard let view else { return [] }
         return [view] + view.subviews.flatMap { descendants(of: $0) }

@@ -314,7 +314,7 @@ struct TranslationPanelView: View {
             SubmitTextEditor(
                 text: $state.sourceText,
                 font: .systemFont(ofSize: readingFontSize, weight: .regular),
-                textColor: .labelColor.withAlphaComponent(0.90),
+                foregroundOpacity: 0.90,
                 lineSpacing: readingLineSpacing,
                 onSubmit: onTranslateRequested,
                 onTextViewReady: onTextViewReady
@@ -350,7 +350,7 @@ struct TranslationPanelView: View {
                 ReadOnlyTextView(
                     text: state.translatedText,
                     font: .systemFont(ofSize: readingFontSize, weight: .regular),
-                    textColor: .labelColor.withAlphaComponent(0.90),
+                    foregroundOpacity: 0.90,
                     lineSpacing: readingLineSpacing
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
