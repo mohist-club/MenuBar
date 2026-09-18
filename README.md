@@ -61,7 +61,8 @@ swift build -c release      # 编译
 ./build.sh                  # 打包成 .app(会自动做 ad-hoc 签名)
 ```
 
-更详细的开发说明见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [DEVELOPMENT.md](DEVELOPMENT.md)。
+更详细的开发说明见 [CONTRIBUTING.md](CONTRIBUTING.md)、[DEVELOPMENT.md](DEVELOPMENT.md)
+和 [文档中心](docs/README.md)。v1.3.2 阶段总结、架构、工程标准、踩坑记录与发布清单均已归档。
 
 ## 技术栈
 
