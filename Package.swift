@@ -12,7 +12,8 @@ let package = Package(
         .executableTarget(
             name: "Poptro",
             dependencies: ["KeyboardShortcuts", "Sparkle"],
-            path: "Sources/Poptro"
+            path: "Sources/Poptro",
+            resources: [.copy("Resources/GoogleG.png")]
         ),
         .testTarget(
             name: "PoptroTests",

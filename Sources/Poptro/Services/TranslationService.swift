@@ -27,13 +27,18 @@ final class TranslationService: NSObject {
     func translateStreaming(
         text: String,
         settings: TranslationSettings,
+        provider: TranslationProvider,
         targetLanguageCode: String,
         onToken: @escaping (String) -> Void,
         onComplete: @escaping (Error?) -> Void
     ) {
-        guard let apiKey = KeychainHelper.loadAPIKey(for: .openai), !apiKey.isEmpty else {
+        guard let endpoint = endpoint(for: provider) else {
+            onComplete(NSError(domain: "Translation", code: -1,
+                                userInfo: [NSLocalizedDescriptionKey: "当前服务不支持 OpenAI 兼容接口"])); return
+        }
+        guard let apiKey = KeychainHelper.loadAPIKey(for: provider), !apiKey.isEmpty else {
             onComplete(NSError(domain: "Translation", code: 1,
-                                userInfo: [NSLocalizedDescriptionKey: "尚未配置 OpenAI API Key"]))
+                                userInfo: [NSLocalizedDescriptionKey: "尚未配置 \(provider.displayName) API Key"]))
             return
         }
 
@@ -44,7 +49,7 @@ final class TranslationService: NSObject {
         self.httpStatusCode = nil
         self.rawErrorBody = Data()
 
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -60,7 +65,7 @@ final class TranslationService: NSObject {
         """
 
         var body: [String: Any] = [
-            "model": settings.model,
+            "model": settings.model(for: provider),
             "stream": true,
             // 低 temperature 让每次翻译用词更稳定、更忠实原文,减少"发挥"
             "temperature": 0.2,
@@ -71,13 +76,26 @@ final class TranslationService: NSObject {
         ]
         // GPT-5 系列是推理模型,默认会先"思考"再作答,翻译这种任务不需要深度推理,
         // 把推理强度压到最低以保证响应速度(非 GPT-5 系列模型会忽略这个参数)
-        if settings.model.hasPrefix("gpt-5") {
+        if provider == .openai, settings.model.hasPrefix("gpt-5") {
             body["reasoning_effort"] = "minimal"
         }
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         let task = session.dataTask(with: request)
         task.resume()
+    }
+
+    private func endpoint(for provider: TranslationProvider) -> URL? {
+        switch provider {
+        case .zhipu:
+            return URL(string: "https://open.bigmodel.cn/api/paas/v4/chat/completions")
+        case .openai:
+            return URL(string: "https://api.openai.com/v1/chat/completions")
+        case .groq:
+            return URL(string: "https://api.groq.com/openai/v1/chat/completions")
+        case .deepl, .google, .ollama:
+            return nil
+        }
     }
 
     /// 尝试从非 2xx 的原始响应体里解析出可读的错误信息

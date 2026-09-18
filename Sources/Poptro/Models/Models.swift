@@ -6,19 +6,34 @@ struct LaunchBinding: Codable, Identifiable, Equatable {
     var appName: String
     var appBundlePath: String   // .app 的完整路径
     var hotkeyName: String      // 对应 KeyboardShortcuts.Name 的 rawValue,格式如 "launch_<uuid>"
+    var isEnabled: Bool
 
-    init(id: UUID = UUID(), appName: String, appBundlePath: String) {
+    init(id: UUID = UUID(), appName: String, appBundlePath: String, isEnabled: Bool = true) {
         self.id = id
         self.appName = appName
         self.appBundlePath = appBundlePath
         self.hotkeyName = "launch_\(id.uuidString)"
+        self.isEnabled = isEnabled
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        appName = try container.decode(String.self, forKey: .appName)
+        appBundlePath = try container.decode(String.self, forKey: .appBundlePath)
+        hotkeyName = try container.decodeIfPresent(String.self, forKey: .hotkeyName)
+            ?? "launch_\(id.uuidString)"
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
     }
 }
 
 /// 翻译服务商
 enum TranslationProvider: String, Codable, CaseIterable, Identifiable {
+    case zhipu
     case openai
     case deepl
+    case groq
+    case google
     case ollama
 
     var id: String { rawValue }
@@ -27,9 +42,21 @@ enum TranslationProvider: String, Codable, CaseIterable, Identifiable {
     /// 设置界面的下拉菜单会自动列出所有 case,不需要改 UI 代码。
     var displayName: String {
         switch self {
+        case .zhipu: return "智谱 GLM(默认,免费模型)"
         case .openai: return "OpenAI(GPT 系列)"
         case .deepl: return "DeepL"
+        case .groq: return "Groq"
+        case .google: return "Google AI(Gemini)"
         case .ollama: return "Ollama(本地模型,免费离线)"
+        }
+    }
+
+    var requiresAPIKey: Bool { self != .ollama }
+
+    var supportsRemoteModelDiscovery: Bool {
+        switch self {
+        case .deepl: return false
+        default: return true
         }
     }
 }
@@ -134,12 +161,15 @@ enum SupportedLanguage {
 
 /// 翻译相关设置(API Key 单独存 Keychain,这里只存非敏感配置)
 struct TranslationSettings: Codable {
-    var provider: TranslationProvider = .openai
+    var provider: TranslationProvider = .zhipu
 
     // gpt-4.1-mini: 无推理步骤、延迟低,1M 超大上下文(长文不怕截断),
     // 价格便宜,是"划词弹窗即时翻译"这个场景质量/速度的最佳平衡点。
     // 想要更高质量可在设置里换成 gpt-5.4-mini 或 gpt-5.4(会稍慢、稍贵)。
     var model: String = "gpt-4.1-mini"
+    var zhipuModel: String = "glm-4-flash-250414"
+    var groqModel: String = "llama-3.1-8b-instant"
+    var googleModel: String = "gemini-2.5-flash"
 
     // 只负责"风格/格式"规则,方向(翻成哪种语言)在发请求时由代码明确指定,
     // 这里不再包含"自动判断中英方向"这句话——之前这句话和运行时追加的强制方向指令冲突,
@@ -174,8 +204,11 @@ struct TranslationSettings: Codable {
     // 手写这版之后,以后再加新字段,旧配置文件只是缺这一个新字段用默认值,其它已保存的设置不受影响。
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        provider = try c.decodeIfPresent(TranslationProvider.self, forKey: .provider) ?? .openai
+        provider = try c.decodeIfPresent(TranslationProvider.self, forKey: .provider) ?? .zhipu
         model = try c.decodeIfPresent(String.self, forKey: .model) ?? "gpt-4.1-mini"
+        zhipuModel = try c.decodeIfPresent(String.self, forKey: .zhipuModel) ?? "glm-4-flash-250414"
+        groqModel = try c.decodeIfPresent(String.self, forKey: .groqModel) ?? "llama-3.1-8b-instant"
+        googleModel = try c.decodeIfPresent(String.self, forKey: .googleModel) ?? "gemini-2.5-flash"
         customSystemPrompt = try c.decodeIfPresent(String.self, forKey: .customSystemPrompt)
             ?? TranslationSettings().customSystemPrompt
         primaryLanguageCode = try c.decodeIfPresent(String.self, forKey: .primaryLanguageCode) ?? "ZH"
@@ -204,6 +237,28 @@ struct TranslationSettings: Codable {
     /// 按语言代码取展示名(不区分服务商,两边共用同一套语言目录)
     func languageLabel(isPrimary: Bool) -> String {
         SupportedLanguage.label(for: isPrimary ? primaryLanguageCode : secondaryLanguageCode)
+    }
+
+    func model(for provider: TranslationProvider) -> String {
+        switch provider {
+        case .zhipu: return zhipuModel
+        case .openai: return model
+        case .groq: return groqModel
+        case .google: return googleModel
+        case .ollama: return ollamaModel
+        case .deepl: return "DeepL"
+        }
+    }
+
+    mutating func setModel(_ value: String, for provider: TranslationProvider) {
+        switch provider {
+        case .zhipu: zhipuModel = value
+        case .openai: model = value
+        case .groq: groqModel = value
+        case .google: googleModel = value
+        case .ollama: ollamaModel = value
+        case .deepl: break
+        }
     }
 }
 

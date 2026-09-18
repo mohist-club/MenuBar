@@ -3,8 +3,8 @@ import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
     /// 唯一的翻译快捷键:有划词就直接翻译,没划词就弹出空白输入框手动翻译。
-    /// 默认 Option + D(类似 Bob 默认习惯,用户可在设置里改)
-    static let translateSelection = Self("translateSelection", default: .init(.d, modifiers: [.option]))
+    /// 默认 Command + G，用户可在设置里修改或临时停用。
+    static let translateSelection = Self("translateSelection", default: .init(.g, modifiers: [.command]))
 }
 
 final class HotkeyManager {
@@ -13,8 +13,18 @@ final class HotkeyManager {
 
     /// 注册"内置"功能的全局快捷键
     func registerAllHotkeys() {
-        KeyboardShortcuts.onKeyUp(for: .translateSelection) {
-            TranslationFlowCoordinator.shared.trigger()
+        let enabled = UserDefaults.standard.object(forKey: "translateShortcutEnabled") as? Bool ?? true
+        setTranslationEnabled(enabled)
+    }
+
+    func setTranslationEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "translateShortcutEnabled")
+        if enabled {
+            KeyboardShortcuts.onKeyUp(for: .translateSelection) {
+                TranslationFlowCoordinator.shared.trigger()
+            }
+        } else {
+            KeyboardShortcuts.disable(.translateSelection)
         }
     }
 

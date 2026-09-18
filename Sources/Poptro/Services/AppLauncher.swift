@@ -56,6 +56,17 @@ final class AppLauncher: ObservableObject {
         persist()
     }
 
+    func setEnabled(_ enabled: Bool, for binding: LaunchBinding) {
+        guard let index = bindings.firstIndex(where: { $0.id == binding.id }) else { return }
+        bindings[index].isEnabled = enabled
+        if enabled {
+            registerHotkey(for: bindings[index])
+        } else {
+            HotkeyManager.shared.unregisterDynamicHotkey(name: binding.hotkeyName)
+        }
+        persist()
+    }
+
     private func persist() {
         LocalStore.save(bindings, filename: filename)
     }
@@ -64,7 +75,7 @@ final class AppLauncher: ObservableObject {
 
     func registerAllLaunchHotkeys() {
         for binding in bindings {
-            registerHotkey(for: binding)
+            if binding.isEnabled { registerHotkey(for: binding) }
         }
     }
 

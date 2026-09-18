@@ -14,6 +14,9 @@ final class TranslationSettingsTests: XCTestCase {
         // 缺失的字段应该用默认值填上,而不是让整体解码失败
         XCTAssertEqual(decoded.provider, .openai)
         XCTAssertEqual(decoded.model, "gpt-4.1-mini")
+        XCTAssertEqual(decoded.zhipuModel, "glm-4-flash-250414")
+        XCTAssertEqual(decoded.groqModel, "llama-3.1-8b-instant")
+        XCTAssertEqual(decoded.googleModel, "gemini-2.5-flash")
         XCTAssertEqual(decoded.primaryLanguageCode, "ZH")
         XCTAssertEqual(decoded.secondaryLanguageCode, "EN-US")
         XCTAssertEqual(decoded.panelAppearanceMode, .light)
@@ -46,6 +49,8 @@ final class TranslationSettingsTests: XCTestCase {
         settings.primaryLanguageCode = "ZH"
         settings.secondaryLanguageCode = "FR"
         settings.panelAppearanceMode = .system
+        settings.groqModel = "llama-3.3-70b-versatile"
+        settings.googleModel = "gemini-2.5-flash-lite"
 
         let data = try JSONEncoder().encode(settings)
         let decoded = try JSONDecoder().decode(TranslationSettings.self, from: data)
@@ -53,6 +58,20 @@ final class TranslationSettingsTests: XCTestCase {
         XCTAssertEqual(decoded.provider, .deepl)
         XCTAssertEqual(decoded.secondaryLanguageCode, "FR")
         XCTAssertEqual(decoded.panelAppearanceMode, .system)
+        XCTAssertEqual(decoded.groqModel, "llama-3.3-70b-versatile")
+        XCTAssertEqual(decoded.googleModel, "gemini-2.5-flash-lite")
+    }
+
+    func testProviderModelRoutingAndDiscoveryCapabilities() {
+        var settings = TranslationSettings()
+        settings.setModel("groq-test", for: .groq)
+        settings.setModel("google-test", for: .google)
+
+        XCTAssertEqual(settings.model(for: .groq), "groq-test")
+        XCTAssertEqual(settings.model(for: .google), "google-test")
+        XCTAssertTrue(TranslationProvider.groq.supportsRemoteModelDiscovery)
+        XCTAssertTrue(TranslationProvider.google.supportsRemoteModelDiscovery)
+        XCTAssertFalse(TranslationProvider.deepl.supportsRemoteModelDiscovery)
     }
 
     func testSupportedLanguageLabelLookup() {

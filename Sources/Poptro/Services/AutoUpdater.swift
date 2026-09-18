@@ -12,7 +12,7 @@ enum AutoUpdater {
         let assets: [Asset]
     }
 
-    static func checkForUpdates() {
+    static func checkForUpdates(silentWhenCurrent: Bool = false) {
         var request = URLRequest(url: releasesURL)
         request.setValue("Poptro", forHTTPHeaderField: "User-Agent")
         URLSession.shared.dataTask(with: request) { data, _, error in
@@ -21,12 +21,12 @@ enum AutoUpdater {
                     showError(error?.localizedDescription ?? "无法读取 GitHub Release 信息")
                     return
                 }
-                present(release)
+                present(release, silentWhenCurrent: silentWhenCurrent)
             }
         }.resume()
     }
 
-    private static func present(_ release: Release) {
+    private static func present(_ release: Release, silentWhenCurrent: Bool) {
         let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         let latest = release.tag_name.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
         let alert = NSAlert()
@@ -40,6 +40,7 @@ enum AutoUpdater {
                 NSWorkspace.shared.open(dmg)
             }
         } else {
+            guard !silentWhenCurrent else { return }
             alert.messageText = "已是最新版本"
             alert.informativeText = "当前版本：\(current)"
             alert.runModal()

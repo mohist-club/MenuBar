@@ -19,12 +19,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         setupStatusItem()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePreferencesChanged),
+            name: .poptroPreferencesDidChange,
+            object: nil
+        )
 
         // 始终注册热键。KeyboardShortcuts 不需要在启动时弹授权；取词时会
         // 静默尝试 AX 并自动走剪贴板兜底。仅用户在设置中主动操作时才请求权限。
         hotkeyManager.registerAllHotkeys()
         appLauncher.registerAllLaunchHotkeys()
         permissionManager.checkAccessibilityPermission { _ in }
+
+        if AppPreferencesStore.shared.values.automaticUpdateChecks {
+            AutoUpdater.checkForUpdates(silentWhenCurrent: true)
+        }
     }
 
     private func setupStatusItem() {
@@ -35,15 +45,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.imageScaling = .scaleProportionallyDown
         }
 
+        rebuildStatusMenu()
+    }
+
+    private func rebuildStatusMenu() {
+        let language = AppPreferencesStore.shared.values.interfaceLanguage
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "设置…", action: #selector(openSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "检查更新…", action: #selector(checkForUpdates), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(
+            title: PoptroText.value("设置…", "Settings…", language: language),
+            action: #selector(openSettings),
+            keyEquivalent: ","
+        ))
+        menu.addItem(NSMenuItem(
+            title: PoptroText.value("检查更新…", "Check for Updates…", language: language),
+            action: #selector(checkForUpdates),
+            keyEquivalent: ""
+        ))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(
+            title: PoptroText.value("退出 Poptro", "Quit Poptro", language: language),
+            action: #selector(quit),
+            keyEquivalent: "q"
+        ))
         for item in menu.items {
             item.target = self
         }
         statusItem.menu = menu
+    }
+
+    @objc private func handlePreferencesChanged() {
+        rebuildStatusMenu()
+        updateSettingsWindowAppearance()
+    }
+
+    private func updateSettingsWindowAppearance() {
+        guard let settingsWindow else { return }
+        let preferences = AppPreferencesStore.shared.values
+        settingsWindow.appearance = preferences.appearanceMode.nsAppearance
+        settingsWindow.title = PoptroText.value(
+            "Poptro 设置",
+            "Poptro Settings",
+            language: preferences.interfaceLanguage
+        )
     }
 
     /// Monochrome companion to the app icon: a Command mark whose lower-right
@@ -81,13 +124,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        let controller = NSHostingController(rootView: SettingsView().frame(width: 560, height: 420))
+        let controller = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: controller)
-        window.title = "Poptro 设置"
-        window.styleMask = [.titled, .closable, .miniaturizable]
-        window.setContentSize(NSSize(width: 600, height: 500))
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 1040, height: 680))
+        window.minSize = NSSize(width: 900, height: 600)
+        window.center()
         window.isReleasedWhenClosed = false
         self.settingsWindow = window
+        updateSettingsWindowAppearance()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

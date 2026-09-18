@@ -42,6 +42,7 @@ struct SubmitTextEditor: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
+        context.coordinator.parent = self
         guard let textView = nsView.documentView as? NSTextView else { return }
         if textView.string != text {
             textView.string = text
@@ -59,7 +60,13 @@ struct SubmitTextEditor: NSViewRepresentable {
         }
 
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            guard commandSelector == #selector(NSResponder.insertNewline(_:)) else { return false }
+            let commandName = NSStringFromSelector(commandSelector)
+            let returnCommands = [
+                "insertNewline:",
+                "insertNewlineIgnoringFieldEditor:",
+                "insertParagraphSeparator:"
+            ]
+            guard returnCommands.contains(commandName) else { return false }
 
             let shiftPressed = NSApp.currentEvent?.modifierFlags.contains(.shift) ?? false
             if shiftPressed {
